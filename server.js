@@ -9,11 +9,22 @@ dotenv.config();
 
 const app = express();
 
-// Configure CORS to allow only the frontend domain
+// CORS Configuration to allow multiple origins
 app.use(
   cors({
-    origin: "https://coderarpan.github.io", // Replace this with your frontend URL
-    methods: ["GET", "POST"], // Allow GET and POST methods
+    origin: function (origin, callback) {
+      // Allow both local development and production URLs
+      if (
+        origin === "http://localhost:5500" || // Local development
+        origin === "https://coderarpan.github.io" || // Production frontend
+        origin === "https://photos-wqb3.onrender.com" // Allow the backend itself
+      ) {
+        callback(null, true); // Allow the request
+      } else {
+        callback(new Error("Not allowed by CORS")); // Reject the request from other origins
+      }
+    },
+    methods: ["GET", "POST"], // Allow only GET and POST methods
     allowedHeaders: ["Content-Type"], // Allow Content-Type header
   })
 );
@@ -36,30 +47,22 @@ app.get("/", (req, res) => {
 // Upload endpoint (admin functionality)
 app.post("/upload", async (req, res) => {
   try {
-    if (!req.files || !req.files.photos || req.files.photos.length === 0) {
-      return res.status(400).json({ error: "No photos uploaded" });
+    if (!req.files || !req.files.photo) {
+      return res.status(400).json({ error: "No photo uploaded" });
     }
 
-    // Loop through each uploaded file and upload it to Cloudinary
-    const uploadPromises = req.files.photos.map((file) => {
-      return cloudinary.uploader.upload(file.tempFilePath, {
-        folder: "photos_app", // Optional: Specify a folder in Cloudinary
-      });
+    const file = req.files.photo;
+    const result = await cloudinary.uploader.upload(file.tempFilePath, {
+      folder: "photos_app", // Optional: Specify a folder in Cloudinary
     });
 
-    // Wait for all files to upload
-    const uploadResults = await Promise.all(uploadPromises);
-
-    // Get URLs of all uploaded files
-    const uploadedUrls = uploadResults.map((result) => result.secure_url);
-
     res.status(200).json({
-      message: "Photos uploaded successfully!",
-      urls: uploadedUrls,
+      message: "Photo uploaded successfully!",
+      url: result.secure_url,
     });
   } catch (error) {
     console.error("Error during photo upload:", error);
-    res.status(500).json({ error: "Failed to upload photos" });
+    res.status(500).json({ error: "Failed to upload photo" });
   }
 });
 
