@@ -13,7 +13,7 @@ const app = express();
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow both local development and production URLs
+      // Allow localhost for development and production frontend URL
       if (
         origin === "http://localhost:5500" || // Local development
         origin === "https://coderarpan.github.io" || // Production frontend
