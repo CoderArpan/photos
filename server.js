@@ -13,12 +13,14 @@ const app = express();
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow localhost for development and production frontend URL
-      if (
-        origin === "http://localhost:5500" || // Local development
-        origin === "https://coderarpan.github.io" || // Production frontend
-        origin === "https://photos-wqb3.onrender.com" // Allow the backend itself
-      ) {
+      // Allow specific origins
+      const allowedOrigins = [
+        "http://localhost:5500", // Local development
+        "https://coderarpan.github.io", // Your production frontend
+        "https://photos-wqb3.onrender.com", // Your deployed backend
+      ];
+
+      if (allowedOrigins.includes(origin) || !origin) {
         callback(null, true); // Allow the request
       } else {
         callback(new Error("Not allowed by CORS")); // Reject the request from other origins
