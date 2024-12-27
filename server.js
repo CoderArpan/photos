@@ -10,11 +10,13 @@ dotenv.config();
 const app = express();
 
 // Configure CORS to allow only the frontend domain
-app.use(cors({
-  origin: "https://coderarpan.github.io", // Replace this with your frontend URL
-  methods: ["GET", "POST"], // Allow GET and POST methods
-  allowedHeaders: ["Content-Type"], // Allow Content-Type header
-}));
+app.use(
+  cors({
+    origin: "https://coderarpan.github.io", // Replace this with your frontend URL
+    methods: ["GET", "POST"], // Allow GET and POST methods
+    allowedHeaders: ["Content-Type"], // Allow Content-Type header
+  })
+);
 
 // Middleware to handle file uploads
 app.use(fileUpload({ useTempFiles: true }));
@@ -34,22 +36,30 @@ app.get("/", (req, res) => {
 // Upload endpoint (admin functionality)
 app.post("/upload", async (req, res) => {
   try {
-    if (!req.files || !req.files.photo) {
-      return res.status(400).json({ error: "No photo uploaded" });
+    if (!req.files || !req.files.photos || req.files.photos.length === 0) {
+      return res.status(400).json({ error: "No photos uploaded" });
     }
 
-    const file = req.files.photo;
-    const result = await cloudinary.uploader.upload(file.tempFilePath, {
-      folder: "photos_app", // Optional: Specify a folder in Cloudinary
+    // Loop through each uploaded file and upload it to Cloudinary
+    const uploadPromises = req.files.photos.map((file) => {
+      return cloudinary.uploader.upload(file.tempFilePath, {
+        folder: "photos_app", // Optional: Specify a folder in Cloudinary
+      });
     });
 
+    // Wait for all files to upload
+    const uploadResults = await Promise.all(uploadPromises);
+
+    // Get URLs of all uploaded files
+    const uploadedUrls = uploadResults.map((result) => result.secure_url);
+
     res.status(200).json({
-      message: "Photo uploaded successfully!",
-      url: result.secure_url,
+      message: "Photos uploaded successfully!",
+      urls: uploadedUrls,
     });
   } catch (error) {
     console.error("Error during photo upload:", error);
-    res.status(500).json({ error: "Failed to upload photo" });
+    res.status(500).json({ error: "Failed to upload photos" });
   }
 });
 
@@ -62,7 +72,7 @@ app.get("/photos", async (req, res) => {
       prefix: "photos_app", // Fetch photos from the 'photos_app' folder
     });
 
-    const photos = result.resources.map(photo => ({
+    const photos = result.resources.map((photo) => ({
       url: photo.secure_url,
       public_id: photo.public_id,
     }));
