@@ -8,7 +8,15 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Configure CORS to allow only the frontend domain
+app.use(cors({
+  origin: "https://coderarpan.github.io", // Replace this with your frontend URL
+  methods: ["GET", "POST"], // Allow GET and POST methods
+  allowedHeaders: ["Content-Type"], // Allow Content-Type header
+}));
+
+// Middleware to handle file uploads
 app.use(fileUpload({ useTempFiles: true }));
 
 // Configure Cloudinary using environment variables
